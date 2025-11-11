@@ -1,0 +1,4121 @@
+openapi: 3.0.0
+servers:
+  - description: API for kiaoCloud.
+    url: https://api.kiaofarming.com/kiaocloud
+  - description: API for kiaoCloud.
+    url: http://api.kiaofarming.com:8080/kiaocloud
+  - description: SwaggerHub API Auto Mocking
+    url: https://virtserver.swaggerhub.com/ERIC_20/kiaoCloud/1.0.2
+  - description: API for kiaoBlockly.
+    url: https://blockly-api.kiaofarming.com/api
+info:
+  version: 1.0.2
+  title: kiaCloud
+  description: The API for the agri IOT project
+paths:
+  '/user/auth':
+    get:
+      tags:
+        - user
+      summary: 取得 kiaCloud authorization code
+      description: 取得 kiaCloud system authorization code & user info
+      parameters:
+        - in: query
+          name: redirect_url
+          required: true
+          schema:
+            type: string
+            example: https://xxxxxx.xxx
+      responses:
+        '200':
+          description: OK 下列response data附帶於 redirect_url 之後
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    description: 執行結果, 若為fail則不帶其他資料
+                    type: string
+                    enum:
+                      - success
+                      - fail
+                  authCode:
+                    description: kiaoCloud 授權碼，用以取得system user token
+                    type: string
+                    example: abcdABCD1234
+                required:
+                  - status
+            text/plain:
+              schema:
+                type: string
+                example: >-
+                  {redirect_url}?status=success&authCode=xxxxxxx
+  '/user/token':
+    post:
+      tags:
+        - user
+      summary: 取得system user token
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                authCode:
+                  description: 由 /user/auth取得的授權碼
+                  type: string
+                  example: abcdABCD1234
+              required:
+                - authCode
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  system_user_token:
+                    type: string
+                    example: abcdefgABCDEFG123451315......
+                required:
+                  - system_user_token
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal Server Error
+        '503':
+          description: Service Unavailable
+    put:
+      tags:
+        - user
+      summary: 更新system user token
+      operationId: refreshUserToken
+      security: 
+        - bearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  system_user_token:
+                    type: string
+                    example: abcdefgABCDEFG123451315......
+                required:
+                  - system_user_token
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal Server Error
+        '503':
+          description: Service Unavailable
+  '/personalInfo':
+    get:
+      tags:
+        - user
+      description: returns registered user
+      operationId: getPersonalInfo
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: All the devices
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PersonalInfo'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                description: 錯誤訊息 TOKEN_NO_SET TOKEN_NO_EXIST
+                properties:
+                  error:
+                    type: string
+                    example: "TOKEN_NO_SET"
+    post:
+      tags:
+        - user
+      operationId: postPersonalInfo
+      security: 
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PersonalInfo'
+            example: 
+              {
+                "phone": "0987654321",
+                "organize": "智食良果",
+                "password": "********"
+              }
+      responses:
+        '200':
+          description: There is a child registered with the given username.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PersonalInfo'
+              example: 
+                {
+                  "phone": "0987654321",
+                  "organize": "智食良果",
+                  "email": "eric@kiaofarming.com"
+                }
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                description: 錯誤訊息 TOKEN_NO_SET TOKEN_NO_EXIST
+                properties:
+                  error:
+                    type: string
+                    example: "TOKEN_NO_SET"
+        '500':
+          description: Internal Server Error.
+  '/member/search/{user}':
+    get:
+      tags:
+        - user
+      description: returns registered user
+      operationId: getMemberSearch
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: user
+          description: user's name or userCode.
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Found user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MembersInfo'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                description: 錯誤訊息 TOKEN_NO_SET TOKEN_NO_EXIST
+                properties:
+                  error:
+                    type: string
+                    example: "TOKEN_NO_SET"
+  '/member/search':
+    get:
+      tags:
+        - user
+      description: returns registered user
+      operationId: getMemberSearchId
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userIds
+          in: header
+          required: true
+          schema:
+            type: array
+            description: 要搜索的 user id (單複數皆可)。
+            example:
+              userIds: 1,2,3,4
+            items:
+              $ref: '#/components/schemas/Id'
+      responses:
+        '200':
+          description: Found user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MembersInfo'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                description: 錯誤訊息 TOKEN_NO_SET TOKEN_NO_EXIST
+                properties:
+                  error:
+                    type: string
+                    example: "TOKEN_NO_SET"
+  '/user/sheetList':
+    get:
+      description: 取得User擁有的work sheet list
+      tags:
+        - user
+      operationId: getWorkSheetList
+      security: 
+        - bearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                      description: Work sheet ID
+                    name:
+                      type: string
+                      description: User自定義work sheet name
+                    gsInfo:
+                      type: object
+                      properties:
+                        sheetId:
+                          type: string
+                        workSheetName:
+                          type: string
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal Server Error
+        '503':
+          description: Service Unavailable
+  '/user/sheet/{sheetId}':
+    put:
+      description: 修改work sheet
+      tags:
+        - user
+      operationId: editWorkSheet
+      security: 
+        - bearerAuth: []
+      parameters:
+        - name: sheetId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal Server Error
+        '503':
+          description: Service Unavailable
+    delete:
+      description: 刪除work sheet
+      tags:
+        - user
+      operationId: deleteWorkSheet
+      security: 
+        - bearerAuth: []
+      parameters:
+        - name: sheetId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal Server Error
+        '503':
+          description: Service Unavailable
+  '/user/sheet':
+    post:
+      description: 新增work sheet
+      tags:
+        - user
+      operationId: addWorkSheet
+      security: 
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                gsInfo:
+                  type: object
+                  properties:
+                    sheetId:
+                      type: string
+                    workSheetName:
+                      type: string
+            example:
+              {
+                name: XX場域-上區,
+                gsInfo: {
+                  sheetId: aabbccddeeffgg,
+                  workSheetName: workSheet1
+                }
+              }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal Server Error
+        '503':
+          description: Service Unavailable
+  '/zoneTree':
+    get:
+      description: 取得具有控制(controllable)權限的區域樹狀表
+      tags:
+        - Zone
+      operationId: getZoneTree
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/zoneTree'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                description: 錯誤訊息 TOKEN_NO_SET TOKEN_NO_EXIST
+                properties:
+                  error:
+                    type: string
+                    example: "TOKEN_NO_SET"
+  '/zone/device/list':
+    get:
+      description: 取得具有存取權限的區域與包含的所有設備
+      tags:
+        - Zone
+      operationId: getZoneDeviceList
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/zoneDeviceList'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                description: 錯誤訊息 TOKEN_NO_SET TOKEN_NO_EXIST
+                properties:
+                  error:
+                    type: string
+                    example: "TOKEN_NO_SET"
+  '/zoneList':
+    get:
+      description: 取得具有存取權限的主區域列表資料
+      tags:
+        - Zone
+      operationId: getMainZoneList
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/zoneDescribe'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                description: 錯誤訊息 TOKEN_NO_SET TOKEN_NO_EXIST
+                properties:
+                  error:
+                    type: string
+                    example: "TOKEN_NO_SET"
+  '/zoneList/envData':
+    get:
+      description: 取得具有存取權限的主區域中的所有環境數值
+      tags:
+        - Zone
+      operationId: getZonesEnvData
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                    envDatas:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/envData'
+              example: 
+                [
+                  {
+                    "id":1,
+                    "envDatas":[
+                      {
+                        "id" : 1234,
+                        "rank" : 1,
+                        "field" : "TEMP",
+                        "category": "溫度",
+                        "value" : "28.6",
+                        "symbol": "°C"
+                      },
+                      {
+                        "id" : 1234,
+                        "rank" : 2,
+                        "field" : "HUMD",
+                        "category": "濕度",
+                        "value" : "84.62",
+                        "symbol": "%"
+                      }
+                      ]
+                    },                  
+                  {
+                    "zoneId":1,
+                    "envDatas":[
+                      {
+                        "id" : 1234,
+                        "rank" : 1,
+                        "field" : "TEMP",
+                        "category": "溫度",
+                        "value" : "28.6",
+                        "symbol": "°C"
+                      },
+                      {
+                        "id" : 1234,
+                        "rank" : 2,
+                        "field" : "HUMD",
+                        "category": "濕度",
+                        "value" : "84.62",
+                        "symbol": "%"
+                      }
+                      ]
+                    },
+                  ]
+  '/zone':
+    post:
+      description: 新增區域
+      tags: 
+        - Zone
+      operationId: addZoneProfile
+      security: 
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: 新增區域的名稱
+                parentId:
+                  type: integer
+                  description: 上一層區域的 id，undefined or 0 則新增成母區域。
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+        '400':
+          description: BadRequest
+          content:
+            application/json:
+              schema:
+                type: object
+                description: 錯誤訊息 REQDATA_IS_NULL REQDATA_INVALID JSON_INVALID ZONE_NOT_EXIST NOT_PARENT_ZONE ZONE_NOT_OWN 
+                properties:
+                  error:
+                    type: string
+                    example: "REQDATA_INVALID"            
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                description: 錯誤訊息 TOKEN_NO_SET TOKEN_NO_EXIST
+                properties:
+                  error:
+                    type: string
+                    example: "TOKEN_NO_SET"
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                type: object
+                description: 錯誤訊息 EDIT_ZONE_FAILED
+                properties:
+                  error:
+                    type: string
+                    example: "ADD_ZONE_FAILED"
+  '/zone/{zoneId}':
+    get:
+      description: 取得指定區域詳細資訊
+      tags: 
+        - Zone
+      operationId: getZoneProfile
+      security: 
+        - bearerAuth: []
+      parameters: 
+        - name: zoneId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Id'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/zoneInfo'
+              example: 
+                [
+                  {
+                    "describe": {
+                      "id": 10,
+                      "name": "桃城 A1",
+                      "image": "https://www.abc.com/A1.jpg",
+                      "owner": "Eric Kuo",
+                      "ranges": [
+                        {
+                          "category": "TEMP",
+                          "max": "38",
+                          "min": "20"
+                        },
+                        {
+                          "category": "HUMD",
+                          "max": "100",
+                          "min": "0"
+                        },
+                        {
+                          "category": "Illuminance",
+                          "max": "",
+                          "min": ""
+                        },
+                        {
+                          "category": "SoilHUMD",
+                          "max": "100",
+                          "min": "40"
+                        }
+                      ]
+                    },
+                    "content": {
+                      "subzones": {
+                        "order": [
+                          13,
+                          11,
+                          12
+                        ],
+                        "list": [
+                          {
+                            "id": 11,
+                            "name": "第一排"
+                          },
+                          {
+                            "id": 12,
+                            "name": "第二排"
+                          },
+                          {
+                            "id": 13,
+                            "name": "第三排"
+                          }
+                        ]
+                      },
+                      "members": [
+                        {
+                          "name": "Eric",
+                          "image": "eric.jpg",
+                          "notifyable": true,
+                          "readable": true,
+                          "controllable": true,
+                          "disable": false
+                        },
+                        {
+                          "name": "sean",
+                          "image": "sean.jpg",
+                          "notifyable": true,
+                          "readable": true,
+                          "controllable": true,
+                          "disable": false
+                        }
+                      ],
+                      "switches": {
+                        "order": [
+                          {
+                            "id": 1,
+                            "rank": 1
+                          },
+                          {
+                            "id": 2,
+                            "rank": 2
+                          }
+                        ]
+                      },
+                      "tasks": {
+                        "order": [
+                          3,
+                          4
+                        ],
+                        "list": [
+                          {
+                            "status": "OFF",
+                            "task_id": 3,
+                            "task_name": "第一排定時澆水",
+                            "task_type": 1,
+                            "storage_id": 20
+                          },
+                          {
+                            "status": "ON",
+                            "task_id": 4,
+                            "task_name": "自動降溫",
+                            "task_type": 2,
+                            "storage_id": 21
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  {
+                    "describe": {
+                      "id": 11,
+                      "name": "第一排",
+                      "owner": "Eric Kuo",
+                      "ranges": [
+                        {
+                          "category": "TEMP",
+                          "max": "38",
+                          "min": "20"
+                        },
+                        {
+                          "category": "HUMD",
+                          "max": "100",
+                          "min": "0"
+                        },
+                        {
+                          "category": "Illuminance",
+                          "max": "",
+                          "min": ""
+                        },
+                        {
+                          "category": "SoilHUMD",
+                          "max": "100",
+                          "min": "40"
+                        }
+                      ]
+                    },
+                    "content": {
+                      "members": [
+                        {
+                          "name": "Eric",
+                          "image": "eric.jpg",
+                          "notifyable": true,
+                          "readable": true,
+                          "controllable": true,
+                          "disable": false
+                        },
+                        {
+                          "name": "sean",
+                          "image": "sean.jpg",
+                          "notifyable": true,
+                          "readable": true,
+                          "controllable": true,
+                          "disable": false
+                        }
+                      ],
+                      "switches": {
+                        "order": [
+                          {
+                            "id": 1,
+                            "rank": 1
+                          },
+                          {
+                            "id": 2,
+                            "rank": 2
+                          }
+                        ]
+                      },
+                      "tasks": {
+                        "order": [
+                          5
+                        ],
+                        "list": [
+                          {
+                            "status": "ON",
+                            "task_id": 5,
+                            "task_name": "自動降溫",
+                            "task_type": 2,
+                            "storage_id": 22
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  {
+                    "describe": {
+                      "id": 12,
+                      "name": "第二排",
+                      "owner": "Eric Kuo",
+                      "ranges": [
+                        {
+                          "category": "TEMP",
+                          "max": "38",
+                          "min": "20"
+                        },
+                        {
+                          "category": "HUMD",
+                          "max": "100",
+                          "min": "0"
+                        },
+                        {
+                          "category": "Illuminance",
+                          "max": "",
+                          "min": ""
+                        },
+                        {
+                          "category": "SoilHUMD",
+                          "max": "100",
+                          "min": "40"
+                        }
+                      ]
+                    },
+                    "content": {
+                      "members": [
+                        {
+                          "name": "Eric",
+                          "image": "eric.jpg",
+                          "notifyable": true,
+                          "readable": true,
+                          "controllable": true,
+                          "disable": false
+                        },
+                        {
+                          "name": "sean",
+                          "image": "sean.jpg",
+                          "notifyable": true,
+                          "readable": true,
+                          "controllable": true,
+                          "disable": false
+                        }
+                      ],
+                      "switches": {
+                        "order": [
+                          {
+                            "id": 1,
+                            "rank": 1
+                          },
+                          {
+                            "id": 2,
+                            "rank": 2
+                          }
+                        ]
+                      },
+                      "tasks": {
+                        "order": [
+                          5
+                        ],
+                        "list": [
+                          {
+                            "status": "ON",
+                            "task_id": 6,
+                            "task_name": "自動降溫",
+                            "task_type": 2,
+                            "storage_id": 23
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  {
+                    "describe": {
+                      "id": 13,
+                      "name": "第三排",
+                      "owner": "Eric Kuo",
+                      "ranges": [
+                        {
+                          "category": "TEMP",
+                          "max": "38",
+                          "min": "20"
+                        },
+                        {
+                          "category": "HUMD",
+                          "max": "100",
+                          "min": "0"
+                        },
+                        {
+                          "category": "Illuminance",
+                          "max": "",
+                          "min": ""
+                        },
+                        {
+                          "category": "SoilHUMD",
+                          "max": "100",
+                          "min": "40"
+                        }
+                      ]
+                    },
+                    "content": {
+                      "members": [
+                        {
+                          "name": "Eric",
+                          "image": "eric.jpg",
+                          "notifyable": true,
+                          "readable": true,
+                          "controllable": true,
+                          "disable": false
+                        },
+                        {
+                          "name": "sean",
+                          "image": "sean.jpg",
+                          "notifyable": true,
+                          "readable": true,
+                          "controllable": true,
+                          "disable": false
+                        }
+                      ],
+                      "switches": {
+                        "order": [
+                          {
+                            "id": 1,
+                            "rank": 1
+                          },
+                          {
+                            "id": 2,
+                            "rank": 2
+                          }
+                        ]
+                      },
+                      "tasks": {
+                        "order": [
+                          5
+                        ],
+                        "list": [
+                          {
+                            "status": "ON",
+                            "task_id": 7,
+                            "task_name": "自動降溫",
+                            "task_type": 2,
+                            "storage_id": 24
+                          }
+                        ]
+                      }
+                    }
+                  }
+                ]
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                description: 錯誤訊息 TOKEN_NO_SET TOKEN_NO_EXIST
+                properties:
+                  error:
+                    type: string
+                    example: "TOKEN_NO_SET"
+    put:
+      description: 編輯區域資訊
+      tags:
+        - Zone
+      operationId: editZoneProfile
+      security: 
+        - bearerAuth: []
+      parameters: 
+        - name: zoneId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Id'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/zoneDescribe'
+            example:
+              {
+                "id": 10,
+                "name": "桃城 A1",
+                "image": "https://www.abc.com/A1.jpg",
+                "owner": "Eric Kuo"
+              }
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: BadRequest
+          content:
+            application/json:
+              schema:
+                type: object
+                description: 錯誤訊息 REQDATA_IS_NULL REQDATA_INVALID JSON_INVALID
+                properties:
+                  error:
+                    type: string
+                    example: "REQDATA_INVALID"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                description: 錯誤訊息 TOKEN_NO_SET TOKEN_NO_EXIST
+                properties:
+                  error:
+                    type: string
+                    example: "TOKEN_NO_SET"
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                type: object
+                description: 錯誤訊息 EDIT_ZONE_FAILED
+                properties:
+                  error:
+                    type: string
+                    example: "EDIT_ZONE_FAILED"
+    delete:
+      description: 刪除區域
+      tags:
+        - Zone
+      operationId: deleteZone
+      security: 
+        - bearerAuth: []
+      parameters: 
+        - name: zoneId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Id'
+      responses:
+        '200':
+          description: OK
+        '404':
+          description: Not Found
+  '/zone/{zoneId}/members':
+    get:
+      description: 以取得指定區域成員清單
+      tags:
+        - Zone
+      operationId: getZoneMembers
+      security: 
+        - bearerAuth: []
+      parameters: 
+        - name: zoneId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Id'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                description: 成員列表
+                items:
+                  $ref: '#/components/schemas/zoneMemberPermission'
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal Server Error
+        '503':
+          description: Service Unavailable
+    post:
+      description: 新增指定區域成員
+      tags:
+        - Zone
+      operationId: addZoneMembers
+      security: 
+        - bearerAuth: []
+      parameters: 
+        - name: zoneId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Id'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              description: 成員 userCode array,可單數亦可複數
+              type: array
+              items:
+                  type: string
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal Server Error
+        '503':
+          description: Service Unavailable
+    put:
+      description: 編輯指定區域成員權限
+      tags:
+        - Zone
+      operationId: editZoneMembersPermission
+      security: 
+        - bearerAuth: []
+      parameters: 
+        - name: zoneId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Id'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              description: Member 權限設定 Array
+              type: object
+              properties:
+                members:
+                  type: array
+                  items:
+                    type: string
+                subzones:
+                  type: array
+                  items:
+                    type: integer
+                notifyable:
+                  type: boolean
+                  description: 可發送通知
+                readable:
+                  type: boolean
+                  description: 可讀
+                controllable:
+                  type: boolean
+                  description: 可控制
+                disable:
+                  type: boolean
+                  description: 停用
+            example: 
+              {
+                members: ["USER01","USER02"],
+                subzones: [1,4,5,7],
+                "notifyable": true,
+                "readable": true,
+                "controllable": true,
+                "disable": false
+              }
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal Server Error
+        '503':
+          description: Service Unavailable
+    delete:
+      description: 刪除指定區域成員
+      tags:
+        - Zone
+      operationId: deleteZoneMembers
+      security: 
+        - bearerAuth: []
+      parameters: 
+        - name: zoneId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Id'
+        - name: codes
+          in: header
+          required: true
+          schema:
+            type: array
+            description: Member Id List
+            example: 
+              codes: kiao0001,kiao0002,kiao0003,kiao0004
+            items:
+              type: string
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal Server Error
+        '503':
+          description: Service Unavailable
+  '/zone/{zoneId}/devices':
+    get:
+      description: 取得指定zone綁定device清單
+      tags:
+        - Zone
+      operationId: getZoneDevices
+      security: 
+        - bearerAuth: []
+      parameters: 
+        - name: zoneId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Id'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                description: 裝置列表
+                items:
+                  $ref: '#/components/schemas/deviceInfo'
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal Server Error
+        '503':
+          description: Service Unavailable
+    post:
+      description: 將指定zone與devices綁定
+      tags:
+        - Zone
+      operationId: bindZoneDevices
+      security: 
+        - bearerAuth: []
+      parameters: 
+        - name: zoneId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Id'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              description: Device Id Array
+              type: array
+              items:
+                $ref: '#/components/schemas/Id'
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal Server Error
+        '503':
+          description: Service Unavailable
+    delete:
+      description: 將指定zone與devices解除綁定
+      tags:
+        - Zone
+      operationId: unbindZoneDevices
+      security: 
+        - bearerAuth: []
+      parameters: 
+        - name: zoneId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Id'
+        - name: deviceIds
+          in: header
+          required: true
+          schema:
+            type: array
+            description: 預解除綁定的 device id(單複數皆可)。
+            example: 
+              deviceIds: 1,2,3,4
+            items:
+              $ref: '#/components/schemas/Id'
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal Server Error
+        '503':
+          description: Service Unavailable
+  '/device/userBinding':
+    post:
+      description: 綁定使用者與裝置(會先驗證裝置及綁定狀態)
+      tags:
+        - Device
+      operationId: deviceBindingUser
+      security: 
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              description: Device 驗證資料
+              type: object
+              properties:
+                ssid:
+                  type: string
+                  description: 裝置編號
+                key:
+                  type: string
+                  description: 裝置綁定用唯一碼
+              required:
+                - ssid
+                - key
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    description: 資料庫中的 Index Id
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal Server Error
+        '503':
+          description: Service Unavailable
+  '/Line/listen':
+    get:
+      description: 取得 Line 的對話訊息 (後端用)
+      tags:
+        - listen
+      operationId: getlistenBot
+      security: 
+        - bearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    userID:
+                      type: string
+                    message:
+                      type: string
+                    replyToken:
+                      type: string
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal Server Error
+        '503':
+          description: Service Unavailable  
+  '/zone/{zoneId}/listen':
+    get:
+      description: 取得裝置更新數據
+      tags:
+        - listen
+      operationId: getlistenDevice
+      security: 
+        - bearerAuth: []
+      parameters: 
+        - name: zoneId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Id'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/deviceValue'
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal Server Error
+        '503':
+          description: Service Unavailable
+
+  '/device/id/{ssid}':
+    get:
+      description: 取得使用者個人裝置 ID
+      tags:
+        - Device
+      operationId: getDeviceId
+      security: 
+        - bearerAuth: []
+      parameters: 
+        - name: ssid
+          in: path
+          required: true
+          schema:
+            type: string
+            description: 裝置編號
+      responses:
+        '200':
+          description: Data Ready
+          content:
+            text/html:
+              schema:
+                $ref: '#/components/schemas/Id'
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal Server Error
+        '503':
+          description: Service Unavailable
+  '/device/list':
+    get:
+      description: "取得所有設備
+      SELECT
+        view_last_bound.user_id AS user,
+        zone.id AS znoe_id, 
+        zone.name AS zone_name, 
+        devices.ssid AS ssid, 
+        devices.id AS dev_id, 
+        devices.name AS dev_name
+      FROM 
+        view_last_bound 
+      JOIN 
+        zone ON zone.id=view_last_bound.zone_id 
+      JOIN 
+        devices ON devices.id=view_last_bound.device_id
+      WHERE 
+        user_id=${USER_ID} ORDER BY zone_id;"
+      tags:
+        - Device
+      operationId: getDeviceList
+      security: 
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Data Ready
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/deviceList'
+              example:
+                [
+                  {
+                    "dev_id":"1",
+                    "ssid":"wf9098",
+                    "dev_name":"馬達",
+                    "zone_id":2,
+                    "zone":"Eric田"
+                  },{
+                    "dev_id":"2",
+                    "ssid":"wf9098",
+                    "dev_name":"風扇",
+                    "zone_id":2,
+                    "zone":"Eric田"
+                  }
+                ]
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal Server Error
+        '503':
+          description: Service Unavailable
+  '/device/{deviceId}':
+    get:
+      description: 取得裝置資訊
+      tags:
+        - Device
+      operationId: getDeviceInfo
+      security: 
+        - bearerAuth: []
+      parameters: 
+        - name: deviceId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Id'
+      responses:
+        '200':
+          description: Data Ready
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/deviceInfo'
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal Server Error
+        '503':
+          description: Service Unavailable
+    put:
+      description: 更新裝置資訊
+      tags:
+        - Device
+      operationId: updateDeviceInfo
+      security: 
+        - bearerAuth: []
+      parameters: 
+        - name: deviceId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Id'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              description: 編輯裝置設定
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: 名稱
+                value:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      rank:
+                        type: integer
+                        description: 裝置上的第幾筆數值
+                      name:
+                        type: string
+                        description: 用戶自定名稱
+                      hidden: 
+                        type: boolean
+                        description: 是否隱藏
+                      category:
+                        type: string
+                        description: 單位類別
+              example:
+                {
+                  "name": "小龜環感",
+                  "value": [
+                      {
+                        "rank": 3,
+                        "name": "光度計",
+                        "hidden": false,
+                        "category": "Illuminance"
+                      }
+                    ]
+                }
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal Server Error
+        '503':
+          description: Service Unavailable
+  '/device/{deviceId}/logs':
+    get:
+      description: "取得數據的歷史資料"
+      tags:
+        - Device
+      operationId: getValueLogs
+      security: 
+        - bearerAuth: []
+      parameters: 
+        - name: deviceId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Id'
+        - name: rank
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/Id'
+        - name: start-date
+          in: header
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: start-time
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: end-date
+          in: header
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: end-time
+          in: header
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/history'
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal Server Error
+        '503':
+          description: Service Unavailable
+  '/device/{deviceId}/history':
+    get:
+      description: 取樣(500筆)後數據的歷史資料
+      tags:
+        - Device
+      operationId: getValueHistory
+      security: 
+        - bearerAuth: []
+      parameters: 
+        - name: deviceId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Id'
+        - name: rank
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/Id'
+        - name: start-date
+          in: header
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: start-time
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: end-date
+          in: header
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: end-time
+          in: header
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/history'
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal Server Error
+        '503':
+          description: Service Unavailable
+  '/device/{deviceId}/action':
+    get:
+      description: "列出數據有變化的時間紀錄
+        SELECT * FROM get_diff_history(2261,1,'2024-07-01','00:00:00','2024-07-02','00:00:00');"
+      tags:
+        - Device
+      operationId: getSwitchAction
+      security: 
+        - bearerAuth: []
+      parameters: 
+        - name: deviceId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Id'
+        - name: rank
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/Id'
+        - name: start-date
+          in: header
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: start-time
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: end-date
+          in: header
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: end-time
+          in: header
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/history'
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal Server Error
+        '503':
+          description: Service Unavailable
+  '/device/{deviceId}/rank/{rank}':
+    post:
+      description: 設定裝置開關狀態
+      tags:
+        - Device
+      operationId: setDeviceSwitch
+      security: 
+        - bearerAuth: []
+      parameters: 
+        - name: deviceId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Id'
+        - name: rank
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Id'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              description: Device設定開關狀態
+              type: object
+              properties:
+                on-off:
+                  type: boolean
+                  description: 指定開啟或關閉
+                maxTime:
+                  type: integer
+                  description: 指定單次最大開啟時間
+                  format: int64
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal Server Error
+        '503':
+          description: Service Unavailable
+  '/device/{deviceId}/time/detection':
+    get:
+      description: 取得裝置detection time
+      tags:
+        - Device
+      operationId: getDeviceDetectionTime
+      security: 
+        - bearerAuth: []
+      parameters: 
+        - name: deviceId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Id'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                  type: object
+                  properties:
+                    time:
+                      type: integer
+                  required:
+                    - time
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal Server Error
+        '503':
+          description: Service Unavailable
+    put:
+      description: 設定裝置 detection time
+      tags:
+        - Device
+      operationId: setDeviceDetectionTime
+      security: 
+        - bearerAuth: []
+      parameters: 
+        - name: deviceId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Id'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                time:
+                  type: integer
+                  description: 裝置 detection time
+                  format: int64   
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                  type: string
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal Server Error
+        '503':
+          description: Service Unavailable
+  '/device/{deviceId}/time/operation/{port}':
+    get:
+      description: 取得裝置特定開關的總運作時間
+      tags:
+        - Device
+      operationId: getDeviceOperationTime
+      security: 
+        - bearerAuth: []
+      parameters: 
+        - name: deviceId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Id'
+        - name: port
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Id'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  time:
+                    type: integer
+                required:
+                  - time
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal Server Error
+        '503':
+          description: Service Unavailable
+  '/valueType':
+    get:
+      description: 取得所有已知的單位列表
+      tags:
+        - Misc
+      operationId: getUnitsList
+      security: 
+        - bearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                    unit:
+                      type: string
+                    name:
+                      type: string
+                    symbol:
+                      type: string
+                example: [
+                    {id: 1, unit: "TEMP", name: "溫度", symbol: "°C"},
+                    {id: 2, unit: "HUMD", name: "濕度", symbol: "%"},
+                    {id: 3, unit: "PAR", name: "光合有效輻射", symbol: "μmol/m2s"},
+                    {id: 4, unit: "SoilHUMD", name: "土壤濕度", symbol: "RAW"},
+                    {id: 5, unit: "SoilHUMD", name: "土壤濕度", symbol: "%"},
+                    {id: 6, unit: "LiquidFlow", name: "流量", symbol: "L"},
+                    {id: 7, unit: "percentage", name: "輸出百分比", symbol: "%"},
+                    {id: 8, unit: "Actuator", name: "開關", symbol: ""},
+                    {id: 9, unit: "Mutex", name: "互斥", symbol: ""},
+                    {id: 10, unit: "SolarRad", name: "光輻射", symbol: "W/m²"},
+                    {id: 11, unit: "SoilEC", name: "土壤電導度", symbol: "mS/cm"},
+                    {id: 12, unit: "SoilTEMP", name: "土壤溫度", symbol: "°C"},
+                    {id: 13, unit: "Illuminance", name: "光照度", symbol: "Lux"},
+                    {id: 14, unit: "NH3", name: "氨氣", symbol: "ppm"},
+                    {id: 15, unit: "CO2", name: "二氧化碳", symbol: "ppm"},
+                    {id: 16, unit: "GAS", name: "濃度", symbol: "ppm"},
+                    {id: 17, unit: "Power", name: "電量", symbol: "V"},
+                  ]
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal Server Error
+        '503':
+          description: Service Unavailable
+  '/modelList':
+    get:
+      description: 取得model list
+      tags:
+        - Misc
+      operationId: getModelList
+      security: 
+        - bearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    model:
+                      type: string
+                    name:
+                      type: string
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal Server Error
+        '503':
+          description: Service Unavailable
+  '/listOrder':
+    get:
+      description: 取得所有主田區的列表順序
+      tags:
+        - Misc
+      operationId: getZoneListOrder
+      security: 
+        - bearerAuth: []
+      parameters: 
+        - name: type
+          in: header
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: integer
+              example:
+                [1,2,3]
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal Server Error
+        '503':
+          description: Service Unavailable
+    put:
+      description: 更新所有主田區 list order data
+      tags:
+        - Misc
+      operationId: updateZoneListOrder
+      security: 
+        - bearerAuth: []
+      parameters: 
+        - name: type
+          in: header
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: integer
+              example: [1,2,3,4,5]
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal Server Error
+        '503':
+          description: Service Unavailable
+  '/listOrder/{zoneId}':
+    get:
+      description: 取得單一主田區的列表順序
+      tags:
+        - Misc
+      operationId: getListOrder
+      security: 
+        - bearerAuth: []
+      parameters: 
+        - name: zoneId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Id'
+        - name: type
+          in: header
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: integer
+              example:
+                [1,2,3]
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal Server Error
+        '503':
+          description: Service Unavailable
+    put:
+      description: 更新 list order data
+      tags:
+        - Misc
+      operationId: updateListOrder
+      security: 
+        - bearerAuth: []
+      parameters: 
+        - name: zoneId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Id'
+        - name: type
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/Id'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: integer
+              example: [1,2,3,4,5]
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal Server Error
+        '503':
+          description: Service Unavailable
+  '/storage':
+    get:
+      description: 取得 local storage list
+      tags:
+        - Storage
+      operationId: getStorageList
+      security: 
+        - bearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/storage'
+                example:
+                  [
+                    {
+                      "id": 1,
+                      "name": "新資料區"
+                    }
+                  ]
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal Server Error
+        '503':
+          description: Service Unavailable 
+  '/storage/{storageId}':
+    get:
+      description: 取得 local storage data
+      tags:
+        - Storage
+      operationId: getStorage
+      security: 
+        - bearerAuth: []
+      parameters: 
+        - name: storageId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Id'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/storage'
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal Server Error
+        '503':
+          description: Service Unavailable
+  '/util/firebaseConfig':
+    get:
+      description: 取得firebase config
+      tags:
+        - Util
+      operationId: getFirebaseConfig
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  apiKey:
+                    type: string
+                  authDomain:
+                    type: string
+                  projectId:
+                    type: string
+                  storageBucket:
+                    type: string
+                  messagingSenderId:
+                    type: string
+                  appId:
+                    type: string
+                  measurementId:
+                    type: string
+  '/blocklyList':
+    get:
+      description: 取得User所擁有的Blockly List
+      tags:
+        - Blockly
+      operationId: getBlocklyListByUser
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                    name:
+                      type: string
+                    last:
+                      type: integer
+                    open:
+                      type: boolean
+        400:
+          description: Bad Request
+        401:
+          description: Unauthorized
+        403:
+          description: Forbidden
+        500:
+          description: Internal Server Error
+        503:
+          description: Service Unavailable
+  '/blockly/search/{keyword}':
+    get:
+      description: 依keyword取得Blockly List
+      tags:
+        - Blockly
+      operationId: searchBlocklyList
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: keyword
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                    name:
+                      type: string
+                    ownerName:
+                      type: string
+                    last:
+                      type: integer
+                    open:
+                      type: boolean
+                    read:
+                      type: boolean
+                    exec:
+                      type: boolean
+        400:
+          description: Bad Request
+        401:
+          description: Unauthorized
+        403:
+          description: Forbidden
+        500:
+          description: Internal Server Error
+        503:
+          description: Service Unavailable
+  '/blockly/{blocklyId}':
+    get:
+      description: 取得blockly資料
+      tags:
+        - Blockly
+      operationId: getBlockly
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: blocklyId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  name:
+                    type: string
+                  userId:
+                    type: integer
+                  lastEdit:
+                    type: integer
+                  blocklyJson:
+                    type: string
+                  sheetNum:
+                    type: integer
+        400:
+          description: Bad Request
+        401:
+          description: Unauthorized
+        403:
+          description: Forbidden
+        500:
+          description: Internal Server Error
+        503:
+          description: Service Unavailable
+    put:
+      description: 修改blockly
+      tags:
+        - Blockly
+      operationId: editBlockly
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: blocklyId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                blocklyJson:
+                  type: string
+                code:
+                  type: string
+      responses:
+        200:
+          description: OK
+        400:
+          description: Bad Request
+        401:
+          description: Unauthorized
+        403:
+          description: Forbidden
+        500:
+          description: Internal Server Error
+        503:
+          description: Service Unavailable
+    delete:
+      description: 修改blockly
+      tags:
+        - Blockly
+      operationId: deleteBlockly
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: blocklyId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: OK
+        400:
+          description: Bad Request
+        401:
+          description: Unauthorized
+        403:
+          description: Forbidden
+        500:
+          description: Internal Server Error
+        503:
+          description: Service Unavailable
+  '/blockly':
+    post:
+      description: 新增blockly
+      tags:
+        - Blockly
+      operationId: addBlockly
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+        400:
+          description: Bad Request
+        401:
+          description: Unauthorized
+        403:
+          description: Forbidden
+        500:
+          description: Internal Server Error
+        503:
+          description: Service Unavailable
+  '/blockly/{blocklyId}/shareInfo':
+    get:
+      description: 取得Blockly分享設定
+      tags:
+        - Blockly
+      operationId: getBlocklyShareSetting
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: blocklyId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  open:
+                    type: boolean
+                  users:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        read:
+                          type: boolean
+                        exec:
+                          type: boolean
+        400:
+          description: Bad Request
+        401:
+          description: Unauthorized
+        403:
+          description: Forbidden
+        500:
+          description: Internal Server Error
+        503:
+          description: Service Unavailable
+    put:
+      description: |
+        ### 修改Blockly分享設定
+          - open 為 true時 \
+          不設定users
+          - open 為 false時 \
+          users為undefined 或 空陣列 表示 清除原有user分享設定 \
+          反之則表示用此資料覆寫原有設定
+      tags:
+        - Blockly
+      operationId: editBlocklyShareSetting
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: blocklyId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                open:
+                  type: boolean
+                users:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                      read:
+                        type: boolean
+                      exec:
+                        type: boolean
+            example:
+              {
+                open: false,
+                users: [
+                  {
+                    id: 1,
+                    read: true,
+                    exec: true
+                  },
+                  {
+                    id: 2,
+                    read: false,
+                    exec: true
+                  }
+                ]
+              }
+      responses:
+        200:
+          description: OK
+        400:
+          description: Bad Request
+        401:
+          description: Unauthorized
+        403:
+          description: Forbidden
+        500:
+          description: Internal Server Error
+        503:
+          description: Service Unavailable
+
+  '/tasks':
+    get:
+      description: 取得所有Task資訊
+      tags:
+        - Task
+      operationId: getAllTaskInfo      
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/blocklyTasks'
+        400:
+          description: Bad Request
+        403:
+          description: Forbidden
+        500:
+          description: Internal Server Error
+        503:
+          description: Service Unavailable
+
+  '/task/{taskId}':
+    get:
+      description: 取得Task資訊
+      tags:
+        - Task
+      operationId: getTaskInfo
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/blocklyTask'
+        400:
+          description: Bad Request
+        401:
+          description: Unauthorized
+        403:
+          description: Forbidden
+        500:
+          description: Internal Server Error
+        503:
+          description: Service Unavailable
+    put:
+      tags:
+        - Task
+      operationId: editTaskInfo
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                blocklyId:
+                  type: integer
+                zoneId:
+                  type: integer
+                date:
+                  type: object
+                  properties:
+                    start:
+                      type: string
+                    end:
+                      type: string
+                sheets:
+                  type: array
+                  items:
+                    type: integer
+                memo:
+                  type: string
+      responses:
+        200:
+          description: OK
+        400:
+          description: Bad Request
+        401:
+          description: Unauthorized
+        403:
+          description: Forbidden
+        500:
+          description: Internal Server Error
+        503:
+          description: Service Unavailable
+    delete:
+      tags:
+        - Task
+      operationId: deleteTaskInfo
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: OK
+        400:
+          description: Bad Request
+        401:
+          description: Unauthorized
+        403:
+          description: Forbidden
+        500:
+          description: Internal Server Error
+        503:
+          description: Service Unavailable
+  '/task':
+    post:
+      tags:
+        - Task
+      operationId: addTaskInfo
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                blocklyId:
+                  type: integer
+                zoneId:
+                  type: integer
+                date:
+                  type: object
+                  properties:
+                    start:
+                      type: string
+                    end:
+                      type: string
+                sheets:
+                  type: array
+                  items:
+                    type: integer
+                memo:
+                  type: string
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+        400:
+          description: Bad Request
+        401:
+          description: Unauthorized
+        403:
+          description: Forbidden
+        500:
+          description: Internal Server Error
+        503:
+          description: Service Unavailable
+  '/task/{taskId}/logs':
+    get:
+      description: 取得Task日誌紀錄
+      tags:
+        - Task
+      operationId: getTaskLogs
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+        400:
+          description: Bad Request
+        401:
+          description: Unauthorized
+        403:
+          description: Forbidden
+        500:
+          description: Internal Server Error
+        503:
+          description: Service Unavailable
+  '/task/{taskId}/operation/{opCmd}':
+    post:
+      description: 啟動/停止Task
+      tags:
+        - Task
+      operationId: operateTask
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: opCmd
+          in: path
+          required: true
+          schema:
+            type: string
+            enum:
+              - "run"
+              - "stop"
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: boolean
+                  message:
+                    type: string
+        400:
+          description: Bad Request
+        401:
+          description: Unauthorized
+        403:
+          description: Forbidden
+        500:
+          description: Internal Server Error
+        503:
+          description: Service Unavailable
+  '/util/spreadSheet/verification':
+    post:
+      description: 驗證並取得試算表資訊
+      tags:
+        - Util
+      operationId: verifyGoogleSpreadSheet
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                sheetId:
+                  type: string
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  name:
+                    type: string
+                  workSheets:
+                    type: array
+                    items:
+                      type: string
+        400:
+          description: Bad Request
+        401:
+          description: Unauthorized
+        403:
+          description: Forbidden
+        500:
+          description: Internal Server Error
+        503:
+          description: Service Unavailable
+  '/util/systemLog':
+    post:
+      description: 寫入System Log
+      tags:
+        - Util
+      operationId: writeSystemLog
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                source:
+                  type: string
+                  enum:
+                    - "KiaoCloud"
+                type:
+                  type: string
+                  enum:
+                    - "error"
+                    - "warning"
+                    - "info"
+                tag:
+                  type: string 
+                log:
+                  type: string
+              example:
+                {
+                  source: "KiaoCloud",
+                  type: "info",
+                  tag: "taskId: 1",
+                  log: "Task is starting"
+                }
+      responses:
+        200:
+          description: OK
+        400:
+          description: Bad Request
+        401:
+          description: Unauthorized
+        403:
+          description: Forbidden
+        500:
+          description: Internal Server Error
+        503:
+          description: Service Unavailable
+
+  '/events':
+    post:
+      description: Server-Sent Events API, 用於接收即時事件
+      tags:
+        - Event
+      operationId: receiveEvents
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                oneOf:
+                  - type: object
+                    description: 接收該User所屬Task狀態 & log更新
+                    properties:
+                      event:
+                        type: string
+                        enum:
+                          - "taskStatus"
+                  - type: object
+                    description: 接收指定Task所屬Log更新
+                    properties:
+                      event:
+                        type: string
+                        enum:
+                          - "taskLog"
+                      id:
+                        type: integer
+                        description: 欲接收的Task ID
+                      isShow:
+                        type: boolean
+                        description: 是否於log顯示額外資訊(type & tag)
+            example:
+              [
+                { event: taskStatus },
+                {
+                  event: taskLog,
+                  id: 1,
+                  isShow: false
+                },
+                { event: deviceStatus },
+                { event: deviceUpdate }
+              ]
+      responses:
+        200:
+          description: OK
+          content:
+            text/event-stream:
+              schema:
+                type: string
+              examples:
+                taskStatus:
+                  value: |
+                    event: taskStatus
+                    data: {"id": 1, "status": "run", "log": "task is running"}
+                "taskLog(isShow: false)":
+                  value: |
+                    event: taskLog
+                    data: {"timestamp":1732256306 , "log": "Task已啟動"}
+                "taskLog(isShow: true)":
+                  value: |
+                    event: taskLog
+                    data: {"timestamp":1732256306 , "log": "[info][taskId:1]Task已啟動"}
+            application/json:
+              schema:
+                oneOf:
+                  - type: object
+                    description: taskStatus SSE response data schema
+                    properties:
+                      id:
+                        type: integer
+                      status:
+                        type: string
+                        enum:
+                          - run
+                          - stop
+                      log:
+                        type: string
+                  - type: object
+                    description: taskLog SSE response data schema
+                    properties:
+                      timestamp:
+                        type: integer
+                      log:
+                        type: string
+              examples:
+                taskStatus:
+                  value:
+                    id: 1
+                    status: run
+                    log: "Task is running"
+                "taskLog(isShow: false)":
+                  value:
+                    timestamp: 1732256306
+                    log: "Task已啟動"
+                "taskLog(isShow: true)":
+                  value:
+                    timestamp: 1732256306
+                    log: "[info][taskId:1]Task已啟動"
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal Server Error
+        '503':
+          description: Service Unavailable
+
+components:
+  schemas:
+    Id:
+      type: integer
+      format: int64
+      minimum: 1
+    PersonalInfo:
+      type: object
+      description: 用戶資訊
+      properties:
+        id:
+          type: integer
+        userCode:
+          type: string
+          description: 登入帳號(唯讀)
+        name:
+          type: string
+          description: 名稱
+        phone:
+          type: string
+          description: 電話號碼
+        organize:
+          type: string
+          description: 單位組織
+        email:
+          type: string
+          description: 電子信箱
+        image:
+          type: string
+          description: 頭像
+        password:
+          type: string
+          format: password
+          description: 密碼
+        API_token:
+          type: string
+          description: 識別 token
+        permission:
+          type: object
+          properties:
+            blockly:
+              type: boolean
+      example: 
+        {
+          "id":2,
+          "name": "Eric Kuo",
+          "phone": "0987654321",
+          "organize": "智食良果",
+          "email": "eric@kiaofarming.com",
+          "image": "https://www.abc.com/eric.jpg",
+          "userCode": "KIAOAH0001",
+          "password": "********",
+          "API_token": "sndo2389ryAD8932AFDSDHAYAC",
+          permission: {
+            blockly: true
+          }
+        }
+    MemberInfo:
+      type: object
+      description: 成員資訊
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+          description: 名稱
+        image:
+          type: string
+          description: 頭像
+        userCode:
+          type: string
+          description: 登入帳號(唯讀)
+    MembersInfo:
+      type: array
+      description: 成員資訊陣列
+      items:
+        $ref: '#/components/schemas/MemberInfo'
+      example:
+        [
+          {
+            "id":2,
+            "name": "Eric Kuo",
+            "image": "https://www.abc.com/eric.jpg",
+            "userCode": "KIAOAH0001"
+          }
+        ]
+    zoneInfo:
+      type: object
+      description: 區域資訊
+      properties:
+        describe:
+          $ref: '#/components/schemas/zoneDescribe'
+        content:
+          $ref: '#/components/schemas/zoneContent'
+    zoneTree:
+      type: array
+      description: 區域樹狀資料
+      items:
+        type: object
+        properties:
+          id:
+            type: integer
+            description: 區域資料庫中的 index ID
+          name:
+            type: string
+            description: 名稱
+          subzones:
+            $ref: '#/components/schemas/zoneTree'
+        example:
+          {
+            "id":4,
+            "name":"Eric",
+            "subzones":[
+              {
+                "id":56,
+                "name":"北區"
+              },{
+                "id":60,
+                "name":"南區"
+              }
+            ]
+          }
+    zoneDeviceList:
+      type: array
+      description: 區域裝置列表
+      items:
+        type: object
+        properties:
+          id:
+            type: integer
+            description: 區域資料庫中的 index ID
+          name:
+            type: string
+            description: 名稱
+          devices:
+            type: array
+            description: 裝置所有數據列表
+            items:
+              $ref: '#/components/schemas/deviceInfo'
+        example:
+          [
+            {
+              "id":4,
+              "name":"Eric",
+              "devices": [
+                  {
+                    "deviceId": 7,
+                    "deviceName": "燈控器",
+                    "rank": 1,
+                    "name": "保溫燈",
+                    "hidden": false
+                  },{
+                    "deviceId": 7,
+                    "deviceName": "燈控器",
+                    "rank": 2,
+                    "name": "UV燈",
+                    "hidden": false
+                  }
+                ]
+            },{
+              "id":56,
+              "name":"北區",
+              "devices": [
+                  {
+                    "deviceId": 8,
+                    "deviceName": "溫控器",
+                    "rank": 1,
+                    "name": "抽風扇",
+                    "hidden": true
+                  },{
+                    "deviceId": 8,
+                    "deviceName": "溫控器",
+                    "rank": 2,
+                    "name": "排風扇",
+                    "hidden": true
+                  }
+                ]              
+            },{
+              "id":60,
+              "name":"南區",
+              "devices": [
+                  {
+                    "deviceId": 9,
+                    "deviceName": "環控器",
+                    "rank": 1,
+                    "name": "加濕",
+                    "hidden": true
+                  },{
+                    "deviceId": 9,
+                    "deviceName": "環控器",
+                    "rank": 2,
+                    "name": "冷氣",
+                    "hidden": false
+                  }
+                ] 
+            }
+          ]
+    zoneDescribe:
+      type: object
+      description: 區域簡介
+      properties:
+        id:
+          type: integer
+          description: 區域資料庫中的 index ID
+        name:
+          type: string
+          description: 名稱
+        image:
+          type: string
+          description: 照片
+        owner:
+          type: string
+          description: 擁有者
+        ownerImage:
+          type: string
+          description: 擁有者
+        subzoneTotal:
+          type: integer
+          description: 子場域總數
+        device:
+          type: object
+          properties:
+            total:
+              type: integer
+              description: 設備總數
+            offline:
+              type: integer
+              description: 離線設備總數
+        ranges:
+          type: array
+          description: 合理值區間
+          items:
+            type: object
+            properties:
+              category:
+                type: string
+                description: 資料類別
+              max:
+                type: string
+                description: 最大值
+              min:
+                type: string
+                description: 最小值
+      example:
+        {
+          "id": 10,
+          "name": "桃城 A1",
+          "image": "https://www.abc.com/A1.jpg",
+          "owner": "Eric Kuo",
+          "ownerImage": "https://image.url",
+          "subzoneTotal": 3,
+          "device": {
+            "total": 4,
+            "offline": 4,
+          },
+          "ranges": [
+            {
+              "category": "TEMP",
+              "max": "38",
+              "min": "20"
+            },{
+              "category": "HUMD",
+              "max": "100",
+              "min": "0"
+            },{
+              "category": "Illuminance",
+              "max": "",
+              "min": ""
+            },{
+              "category": "SoilHUMD",
+              "max": "100",
+              "min": "40"
+            }
+          ]
+        }
+    zoneContent:
+      type: object
+      description: 區域詳細資訊
+      properties:
+        subzones:
+          type: object
+          properties:
+            order:
+              type: array
+              items:
+                type: integer
+            list:
+              type: array
+              description: 子區域列表
+              items:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    description: 資料庫中的 index ID
+                  name:
+                    type: string
+                    description: 名稱
+        members:
+          type: array
+          description: 成員列表
+          items:
+            $ref: '#/components/schemas/zoneMemberPermission'
+        switches:
+          type: array
+          description: 開關列表
+          items:
+            $ref: '#/components/schemas/deviceCtrl'
+        tasks:
+          type: array
+          description: 排程列表
+          items:
+            $ref: '#/components/schemas/TaskDescribe'
+      example: 
+          {
+            "subzones":{ 
+              "order": [13,11,12],
+              "list":[
+                {
+                  "id": 11,
+                  "name": "第一排"
+                },{
+                  "id": 12,
+                  "name": "第二排"
+                },{
+                  "id": 13,
+                  "name": "第三排"
+                }
+              ]
+            },
+            "members": [
+              {
+                "name": "Eric",
+                "image": "eric.jpg",
+                "notifyable": true,
+                "readable": true,
+                "controllable": true,
+                "disable": false
+              }, {
+                "name": "sean",
+                "image": "sean.jpg",
+                "notifyable": true,
+                "readable": true,
+                "controllable": true,
+                "disable": false
+              }
+            ],
+            "switches": {
+              "order": [
+                {"id": 1, "rank": 1},
+                {"id": 2, "rank": 2} 
+              ]
+            },
+            "tasks": {
+              "order": [3,4 ],
+              "list": [
+                {
+                  "status": "OFF",
+                  "task_id": 3,
+                  "task_name": "第一排定時澆水",
+                  "task_type": 1,
+                  "storage_id": 20
+                },{
+                  "status": "ON",
+                  "task_id": 4,
+                  "task_name": "自動降溫",
+                  "task_type": 2,
+                  "storage_id": 21
+                },
+              ]
+            }
+          }
+    zoneMemberPermission:
+      type: object  
+      properties:
+        userCode:
+          type: string
+          description: 系統自動產生的使用者辦識碼
+        name:
+          type: string
+          description: 姓名
+        image:
+          type: string
+          description: 頭像
+        subzones:
+          type: array
+          items:
+            type: integer
+        notifyable:
+          type: boolean
+          description: 可發送通知
+        readable:
+          type: boolean
+          description: 可讀
+        controllable:
+          type: boolean
+          description: 可控制
+        disable:
+          type: boolean
+          description: 停用
+      example:
+        {
+          "userCode" : "kiaou0001",
+          "name": "Eric",
+          "image": "eric.jpg",
+          "subzones": [1,2,3,4],
+          "notifyable": true,
+          "readable": true,
+          "controllable": true,
+          "disable": false
+        }
+    envData:
+      type: object
+      description: 環境數據
+      properties:
+        id:
+          type: integer
+          description:  裝置在資料庫中的 Index Id
+        rank:
+          type: integer
+          description: 數據在裝置中的第幾位
+        field:
+          type: string
+          description: 數據總類，如：TEMP、HUMD ⋯⋯
+        category:
+          type: string
+          description: 數據類別，如：溫度、濕度、光度⋯⋯
+#        value:
+#          type: string
+#          description: 數據
+        symbol:
+          type: string
+          description: 顯示符號
+      example: 
+        [
+          {
+            "id" : 1234,
+            "rank" : 1,
+            "field" : "TEMP",
+            "category": "溫度",
+#            "value" : "28.6",
+            "symbol": "°C"
+          },
+          {
+            "id" : 1234,
+            "rank" : 2,
+            "field" : "HUMD",
+            "category": "濕度",
+#            "value" : "84.62",
+            "symbol": "%"
+          }
+        ]
+
+    TaskDescribe:
+      type: object
+      description: 排程資訊
+      properties:
+        status:
+          type: boolean
+          description: 執行狀態
+        task_id:
+          type: integer
+          description: 資料庫中的 Index Id
+        task_name:
+          type: string
+          description: 名稱
+        task_type:
+          type: integer
+          description: 排程種類
+        storage_id:
+          type: integer
+          description: 排程參數儲存位置
+      example: 
+        {
+          "status": "OFF",
+          "task_id": 3,
+          "task_name": "第一排定時澆水",
+          "task_type": 1,
+          "storage_id": 20
+        }
+    TaskInfo:
+      type: object
+      description: 排程資訊
+      properties:
+        describe:
+          $ref: '#/components/schemas/TaskDescribe'
+        data:
+          oneOf:
+            - $ref: '#/components/schemas/TimerSchedule'
+            - $ref: '#/components/schemas/EnvSchedule'
+    validity:
+      type: object
+      description: 排程有效期間
+      properties:
+        begin_date:
+          type: string
+          format: date
+          description: 起始日
+        over_date:
+          type: string
+          format: date
+          description: 到期日
+        cycle_days:
+          type: string
+          description: 運作週期
+      example: 
+        {
+          "begin_date" : "2023-09-23",
+          "over_date" : "2024-10-15",
+          "cycle_days" : 1,
+        }
+    condition:
+      type: object
+      description: 環境排程條件式，如：感測器A的溫度大於30度
+      properties:
+        variable:
+          $ref: '#/components/schemas/deviceTag'
+        operator:
+          type: string
+          description: 運算子，如： >、<、=、>=、<=、!=
+        constants:
+          type: string
+          description: 常量，內容包含：浮點數、整數、字串⋯⋯ 如： 30.4、"on"、"東"⋯⋯
+        switches:
+          type: array
+          description: 排程相關裝置開關
+          items:
+            $ref: '#/components/schemas/deviceTag'
+      example: 
+        {
+          "variable": {
+            "ssid": "ta1234",
+            "key": "12345678",
+            "rank": 1,
+          },
+          "operator": ">",
+          "constants": "30.4"
+        }
+    storage:
+      type: object
+      description: 提供使用者的個資料空間
+      properties:
+        id:
+          type: integer
+          description: 資料庫中的 Index Id
+        user_id:
+          type: integer
+          description: 使用者在資料庫中的 Index Id
+        name:
+          type: string
+          description: 名稱
+        content:
+          type: string
+          description: 內容
+        devices:
+          type: array
+          description: 排程相關裝置開關
+          items:
+            $ref: '#/components/schemas/deviceTag'
+        memo:
+          type: string
+          description: 備註
+    TimerSchedule:
+      type: object
+      description: 時間排程的設定項
+      properties:
+        line_notify: 
+          type: boolean
+          default: true
+          description: 是否發出通知
+        validity:
+          $ref: '#/components/schemas/validity'
+        switches:
+          type: array
+          description: 排程相關裝置開關
+          items:
+            $ref: '#/components/schemas/deviceTag'
+        start_time:
+          type: string
+          description: 開始時間
+        end_time:
+          type: string
+          description: 結束時間
+        working_time:
+          type: string
+          description: 運行時長
+        interval_time:
+          type: string
+          description: 間隔時長
+        linkage:
+          $ref: '#/components/schemas/deviceTag'
+      example:
+        {
+          "line_notify": true,
+          "validity": {
+            "begin_date" : "2023-09-23",
+            "over_date" : "2024-10-15",
+            "cycle_days" : 1,
+          },
+          "switches": [
+            {
+              "ssid": "wf1234",
+              "key": "12345",
+              "rank": 1
+            },{
+              "ssid": "wf1234",
+              "key": "12345",
+              "rank": 2
+            }
+          ],
+          "start_time": "08:00:00",
+          "end_time": "13:00:00",
+          "working_time": "00:00:05",
+          "interval_time": "00:00:15",
+          "linkage" : {
+            "ssid": "wf4321",
+            "key": "54321",
+            "rank": 1
+          }
+        }
+    EnvSchedule:
+      type: object
+      description: 環境排程設定項
+      properties:
+        line_notify: 
+          type: boolean
+          default: true
+          description: 是否發出通知
+        begin_date:
+          type: string
+          format: date
+          description: 起始日
+        over_date:
+          type: string
+          format: date
+          description: 到期日
+        cycle_days:
+          type: string
+          description: 運作週期
+        start_condition:
+          $ref: '#/components/schemas/condition'
+        stop_condition:
+          $ref: '#/components/schemas/condition'
+      example:
+        {
+          "line_notify": true,
+          "begin_date" : "2023-09-23",
+          "over_date" : "2024-10-15",
+          "cycle_days" : 1,
+          "start_condition": {
+            "variable": {
+              "ssid": "ta1234",
+              "key": "12345678",
+              "rank": 1,
+            },
+            "operator": ">",
+            "constants": "18",
+            "switches": [
+              {
+                "ssid": "wf1234",
+                "key": "12345",
+                "rank": 1
+              },{
+                "ssid": "wf1234",
+                "key": "12345",
+                "rank": 2
+              }
+            ],
+          },
+          "stop_condition": {
+            "variable": {
+              "ssid": "ta1234",
+              "key": "12345678",
+              "rank": 1,
+            },
+            "operator": "<",
+            "constants": "20",
+            "switches": [
+              {
+                "ssid": "wf1234",
+                "key": "12345",
+                "rank": 1
+              },{
+                "ssid": "wf1234",
+                "key": "12345",
+                "rank": 2
+              }
+            ],
+          }
+        }
+    device:
+      type: object
+      description: 裝置清單
+      properties:
+        zone:
+          type: string
+          description: 區域名稱
+        ssid:
+          type: string
+          description: 裝置SSID
+        key:
+          type: string
+          description: 裝置KEY
+        dev:
+          type: string
+          description: 裝置名稱
+        rank:
+          type: integer
+          description: 順序
+        name:
+          type: string
+          description: 名稱
+    deviceList:
+      type: object
+      description: 裝置清單
+      properties:
+        zone:
+          type: string
+          description: 區域名稱
+        zone_id:
+          type: integer
+          description: 區域 index
+        ssid:
+          type: string
+          description: 裝置SSID
+        dev_id:
+          type: integer
+          description: 裝置 index
+        dev_name:
+          type: string
+          description: 裝置名稱
+    deviceInfo:
+      type: object
+      description: 裝置目前狀態
+      properties:
+        id:
+          type: integer
+          description: 資料庫中的 Index Id
+        zone:
+          type: integer
+          description: 綁定的區域 Id，判斷是否在主田區用。
+        name:
+          type: string
+          description: 名稱
+        type:
+          type: string
+          description: 設備類型
+        ssid:
+          type: string
+          description: 裝置SSID
+        key:
+          type: string
+          description: 設備KEY
+        status:
+          type: boolean
+          description: 連線狀態
+        vsrsion:
+          type: string
+          description: 韌體版本
+        values:
+          type: array
+          description: 裝置所有數據列表
+          items:
+            $ref: '#/components/schemas/deviceValue'
+      example: 
+        {
+          "id": 7,
+          "zone": 4,
+          "name": "小龜燈控",
+          "ssid": "wf8099",
+          "key": "wbRJR",
+          "status": true,
+          "type": "2路控制器",
+          "vsrsion": "0.2.27",
+          "values": [
+            {
+              "deviceId": 7,
+              "rank": 1,
+              "name": "UV燈",
+              "value": "ON",
+              "symbol": "",
+              "category": "actuator",
+              "hidden": "false"
+            },{
+              "deviceId": 7,
+              "rank": 2,
+              "name": "2",
+              "value": "OFF",
+              "symbol": "",
+              "category": "actuator",
+              "hidden": "false"
+            },{
+              "deviceId": 7,
+              "rank": 3,
+              "name": "",
+              "value": "82.3",
+              "symbol": "L",
+              "category": "LiquidFlow",
+              "hidden": "false"
+            },{
+              "deviceId": 7,
+              "rank": 4,
+              "name": "",
+              "value": "OFF",
+              "symbol": "",
+              "category": "actuator",
+              "hidden": "true"
+            },{
+              "deviceId": 7,
+              "rank": 5,
+              "name": "",
+              "value": "OFF",
+              "symbol": "",
+              "category": "actuator",
+              "hidden": "true"
+            },
+          ]
+        }
+    deviceValue:
+      type: object
+      description: 裝置上的數據描述
+      properties:
+        deviceId:
+          type: integer
+          description: 裝置在資料庫中的 Index Id
+        rank:
+          type: integer
+          description: 裝置上的第幾筆數值
+        name:
+          type: string
+          description: 用戶自定名稱，如果空白以 category 為依據做為預設名稱
+        value:
+          type: string
+          description: 數據，內容包含：浮點數、整數、字串⋯⋯據
+        symbol:
+          type: string
+          description: 顯示單位符號
+        category:
+          type: string
+          description: 數據類別
+      example: 
+        {
+          "deviceId": 5,
+          "rank": 1,
+          "name": "溫度",
+          "value": "25.3",
+          "symbol": "°C",
+          "category": "TEMP",
+          "hidden": "false"
+        }
+    deviceTag:
+      type: object
+      description: 列舉關聯的設備數據
+      properties:
+        ssid:
+          type: string
+          description: 裝置編號
+        key:
+          type: string
+          description: 裝置綁定用唯一碼
+        rank:
+          type: integer
+          description: 指定裝置上的第幾號開關或數據
+      example: 
+        {
+          "ssid": "wf1234",
+          "key": "12345",
+          "rank": 1
+        }
+    deviceCtrl:
+      type: object
+      description: 指定讀取或控制的裝置與第幾號數據
+      properties:
+        id:
+          type: integer
+          description: 裝置在資料庫中的 index id。
+        name:
+          type: string
+          description: 開關在資料庫中的名稱。
+        online:
+          type: boolean
+          description: 裝置是否上線。
+        rank:
+          type: integer
+          description: 指定裝置上的第幾號開關或數據
+        on-off:
+          type: string
+          description: 指定開啟或關閉
+        maxTime:
+          type: integer
+          description: 指定單次最大開啟時長
+          format: int64
+      example: 
+        {
+          "id": 234,
+          "name": "開關1",
+          "online": true,
+          "rank": 1,
+          "on-off": "ON",
+          "maxTime": 500
+        }
+    history:
+      type: object
+      description: 歷史數據
+      properties:
+        name:
+          type: string
+          description: 用戶自定名稱，如果空白以 category 為依據做為預設名稱
+        symbol:
+          type: string
+          description: 顯示單位符號
+        category:
+          type: string
+          description: 數據類別
+        data:
+          type: array
+          description: 所有資料
+          items:
+            type: object
+            properties:
+              date:
+                type: string
+                format: date
+                description: 日期
+              time:
+                type: string
+                description: 時間
+              value:
+                type: string
+                description: 數據，內容包含：浮點數、整數、字串⋯⋯
+      example:
+        {
+          "name": "",
+          "symbol": "°C",
+          "category": "TEMP",
+          "data": [
+              {
+                "date": "2023-01-23",
+                "time": "00:00:01",
+                "value": "25.3"
+              }
+            ]
+        }
+
+    blocklyTask:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        name:
+          type: string
+        status:
+          type: string
+          enum:
+            - "run"
+            - "stop"
+        date:
+          type: object
+          properties:
+            start:
+              type: string
+            end:
+              type: string
+        zone:
+          type: object
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+        blockly:
+          type: object
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+        memo:
+          type: string
+        sheets:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+                description: Work sheet ID
+              name:
+                type: string
+                description: User自定義work sheet name
+              gsInfo:
+                type: object
+                properties:
+                  sheetId:
+                    type: string
+                  workSheetName:
+                    type: string
+    blocklyTasks:
+      type: array
+      items:
+        $ref: "#/components/schemas/blocklyTask"
+
+  securitySchemes:
+    bearerAuth:
+      type: apiKey
+      name: Authorization
+      in: header
+      description: "EX: Bearer {sys_user_token}"
