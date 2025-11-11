@@ -1,0 +1,1067 @@
+openapi: 3.0.0
+info:
+  version: '0.2'
+  title: u-farming
+  description: API for  u-farming
+servers:
+  - description: SwaggerHub API Auto Mocking
+    url: https://u-farming.kiaofarming.com
+paths:
+  /user/auth:
+    get:
+      tags:
+        - user
+      summary: 取得u-farming authorization code
+      description: 取得u-farming system authorization code & user info
+      parameters:
+        - in: query
+          name: redirect_url
+          required: true
+          schema:
+            type: string
+            example: https://xxxxxx.xxx
+      responses:
+        '200':
+          description: OK 下列response data附帶於redirect_url之後
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    description: 執行結果, 若為fail則不帶其他資料
+                    type: string
+                    enum: 
+                      - success
+                      - fail
+                  auth_code:
+                    description: u-farming授權碼，用以取得system user token
+                    type: string
+                    example: abcdABCD1234
+                  name:
+                    description: 使用者名稱
+                    type: string
+                    example: KiaoFarming
+                  image:
+                    description: 使用者圖像
+                    type: string
+                    example: https://xxxxxxxxx
+                required:
+                  - status
+            text/plain:
+              schema:
+                type: string
+                example: >-
+                  {redirect_url}?status=success&name=xxx&image=xxxxxx&isAdmin=true
+  /user/token:
+    post:
+      tags: 
+        - user
+      summary: 取得system user token
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                auth_code:
+                  description: 由 /user/auth取得的授權碼
+                  type: string
+                  example: abcdABCD1234
+              required:
+                - auth_code
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  system_user_token:
+                    type: string
+                    example: abcdefgABCDEFG123451315......
+                required:
+                  - system_user_token
+  /user/verification:
+    post:
+      tags:
+        - user
+      summary: 驗證system user token有效性
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                token:
+                  description: 由/user/token取得的system user token
+                  type: string
+              required:
+                - token
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  name:
+                    type: string
+                  image:
+                    type: string
+                required: 
+                  - status
+                  - name
+                  - image
+        400:
+          description: Invalid
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                required: 
+                  - status
+  '/damage/{type}/{ID}':
+    get:
+      tags:
+        - viewer
+      description: 回傳單一病害或蟲害的相關資訊
+      operationId: getDamageInfo
+      parameters:
+        - name: type
+          in: path
+          required: true
+          schema:
+            type: string
+            enum:
+              - pests
+              - diseases
+        - name: ID
+          in: path
+          required: true
+          schema:
+            type: string 
+      responses:
+        '200':
+          description: Data Ready
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/damageInfo'
+    put:
+      tags: 
+        - editor
+      description: 修改指定ID病蟲害資料
+      operationId: modifyDamageProfile
+      security:
+        - bearerAuth: []
+      parameters: 
+        - name: type
+          in: path
+          required: true
+          schema:
+            type: string
+            enum:
+              - pests
+              - diseases
+        - name: ID
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/id'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/damageEditInfo'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/editResult'
+    delete:
+      tags:
+        - editor
+      description: 刪除指定病蟲害資訊
+      operationId: deleteDamageInfo
+      security: 
+        - bearerAuth: []
+      parameters: 
+        - name: type
+          in: path
+          required: true
+          schema:
+            type: string
+            enum:
+              - pests
+              - diseases
+        - name: ID
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: 
+                      - success
+                      - failed
+                required: 
+                  - status
+  '/plant/{ID}':
+    get:
+      tags:
+        - viewer
+      description: 回傳單一作物的相關資訊
+      operationId: getPlantInfo
+      parameters: 
+        - name: ID
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Data Ready
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/plantInfo'
+    put:
+      tags:
+        - editor
+      description: 修改作物相關資訊
+      operationId: modifyPlantInfo
+      security: 
+        - bearerAuth: []
+      parameters: 
+        - name: ID
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/plantEditInfo'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: 
+                      - success
+                      - failed
+                required: 
+                  - status
+    delete:
+      tags:
+        - editor
+      description: 刪除指定作物資訊
+      operationId: deletePlantInfo
+      security: 
+        - bearerAuth: []
+      parameters: 
+        - name: ID
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: 
+                      - success
+                      - failed
+                required: 
+                  - status
+  '/material/{ID}':
+    get:
+      tags:
+        - viewer
+      description: 回傳單一資材的相關資訊
+      operationId: getMaterialsInfo
+      parameters: 
+        - name: ID
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Data Ready
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/materialInfo'
+    put:
+      tags:
+        - editor
+      description: 修改單一資材的相關資訊
+      operationId: modifyMaterialProfile
+      security: 
+        - bearerAuth: []
+      parameters: 
+        - name: ID
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/materialEdit'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/editResult'
+    delete:
+      tags:
+        - editor
+      description: 刪除指定防治資材資訊
+      operationId: deleteMaterialInfo
+      security: 
+        - bearerAuth: []
+      parameters: 
+        - name: ID
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/editResult'
+  '/class/{className}':
+    get:
+      tags:
+        - list
+      description: 回傳單一類別列表
+      operationId: getClass
+      parameters: 
+        - name : className
+          in: path
+          required: true 
+          schema:
+            type: string
+            enum:
+              - plantType
+              - plantFamily
+              - plantOrgan
+              - potSize
+              - place
+              - propagation
+              - LightCondition
+              - cropLifeCycle
+              - irrigationModel
+              - color
+              - symptom
+              - pestSize
+              - environment
+              - controlMaterial
+              - controlMaterialType
+      responses:
+        '200':
+          description: response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/tableList'
+  '/list/plants/{classID}':
+    get:
+      tags:
+        - list
+      description: 回傳單一作物類別的資料列表
+      operationId: getPlantList
+      parameters: 
+        - name : classID
+          required: true
+          in: path
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/tableList'
+  '/list/plants/popular':
+    get:
+      tags:
+        - list
+      description: 回傳前10熱門作物列表
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      description: 作物id
+                      type: integer
+                      format: int32
+                      minimum: 1
+                    name:
+                      type: string
+                    class:
+                      type: string
+                    image:
+                      type: array
+                      items:
+                        type: string
+                  required:
+                    - id
+                    - name
+                    - class
+                    - image
+  '/list/{type}':
+    get:
+      tags: 
+        - list
+      description: 回傳單一類別的資料列表
+      operationId: getList
+      parameters: 
+        - name: type
+          in: path
+          required: true
+          schema:
+            type: string
+            enum:
+              - plants
+              - pests
+              - diseases
+              - materials
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/tableList'
+  '/list/{keyword}':
+    get:
+      tags:
+        - list
+      description: 依關鍵字取得plants, pests, diseases列表
+      parameters:
+        - name: keyword
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                description: 關鍵字搜尋結果
+                properties:
+                  plants:
+                    $ref: '#/components/schemas/tableList'
+                  pests:
+                    $ref: '#/components/schemas/tableList1'
+                  diseases:
+                    $ref: '#/components/schemas/tableList1'
+                  materials:
+                    $ref: '#/components/schemas/tableList1'
+  '/plant':
+    post:
+      tags:
+        - editor
+      description: 新增一筆作物資料
+      operationId: addPlantProfile
+      security: 
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/plantEditInfo'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/editResult'
+  '/damage/{type}':
+    post:
+      tags:
+        - editor
+      description: 新增一筆病蟲害資料
+      operationId: addDamageProfile
+      security:
+        - bearerAuth: []
+      parameters: 
+        - name: type
+          in: path
+          required: true
+          schema:
+            type: string
+            enum:
+              - pests
+              - diseases
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/damageEditInfo'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/editResult'
+  '/material':
+    post:
+      tags:
+        - editor
+      description: 新增一筆防治資材資料
+      operationId: addMaterialProfile
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/materialEdit'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/editResult'
+components:
+  schemas:
+    id:
+      type: integer
+      minimum: 1
+    strArray:
+      type: array
+      items:
+        type: string
+    idArray:
+      type: array
+      items:
+        $ref: '#/components/schemas/id'
+    damageInfo:
+      type: object
+      description: 作物危害資訊
+      properties:
+        id:
+          type: integer
+        name:
+          $ref: '#/components/schemas/name'
+        images:
+          $ref: '#/components/schemas/imageBase'
+        size:
+          type: string
+        colors:
+          type: array
+          items:
+            $ref: '#/components/schemas/color'
+        environment:
+          type: object
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+        seasons:
+          type: array
+          items:
+            type: string
+        organs:
+          type: array
+          items:
+            $ref: '#/components/schemas/brief'
+        preventions:
+          type: array
+          items:
+            $ref: '#/components/schemas/content'
+    plantInfo:
+      type: object
+      description: 作物資訊
+      properties:
+        id:
+          type: integer
+          format: int32
+        name:
+          $ref: '#/components/schemas/name'
+        images:
+          $ref: '#/components/schemas/imagePlant'
+        commonSpecies:
+          type: string
+        category:
+          type: string
+        family:
+          type: string
+        cropLifeCycle:
+          type: string
+        potSize:
+          type: object
+          properties:
+            id:
+              $ref: '#/components/schemas/id'
+            name:
+              type: string
+            level:
+              type: integer
+              minimum: 1
+              maximum: 4
+        irrigationMode:
+          type: string
+        soil:
+          type: string
+        propagations:
+          type: array
+          items:
+            $ref: '#/components/schemas/idNamePair'
+        waterRequirement:
+          type: integer
+        plantingDifficulty:
+          type: integer
+        lightCondition:
+          type: array
+          items:
+            type: string
+        places:
+          type: array
+          items:
+            type: string
+        months:
+          $ref: '#/components/schemas/range'
+        damage:
+          type: array
+          items:
+            $ref: '#/components/schemas/brief'
+        temperature:
+          type: object
+          properties:
+            growth:
+              $ref: '#/components/schemas/threshold'
+            germination:
+              $ref: '#/components/schemas/threshold'
+        harvestPeriod:
+          $ref: '#/components/schemas/threshold'
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/content'
+    materialInfo:
+      type: object
+      description: 資材資訊
+      properties:
+        id:
+          type: integer
+          format: int32
+        name:
+          type: string
+        images:
+          $ref: "#/components/schemas/imageMaterial"
+        type:
+          type: string
+        target:
+          type: string
+        method:
+          type: string
+        ingredients:
+          type: string
+        mechanism:
+          type: string
+        steps:
+          type: array
+          items:
+            $ref: '#/components/schemas/materialContent'
+        precautions:
+          type: array
+          items:
+            $ref: '#/components/schemas/materialContent'
+        
+    materialContent:
+      type: object
+      properties:
+        description:
+          type: string
+        image:
+          type: string
+    name:
+      type: object
+      properties:
+        chinese:
+          type: string
+        english:
+          type: string
+        scientific:
+          type: string
+        nick:
+          type: string
+    range:
+      type: object
+      properties:
+        plant:
+          $ref: '#/components/schemas/months'
+        breeding:
+          $ref: '#/components/schemas/months'
+        viewing:
+          $ref: '#/components/schemas/months'
+    months:
+      type: array
+      items:
+        type: integer
+        enum:
+          - 1
+          - 2
+          - 3
+          - 4
+          - 5
+          - 6
+          - 7
+          - 8
+          - 9
+          - 10
+          - 11
+          - 12
+    brief:
+      type: object
+      description: 類別簡述
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        typeName:
+          type: string
+        symptoms:
+          type: array
+          items:
+            type: string
+    threshold:
+      type: object
+      description: 上下閾值
+      properties:
+        min:
+          type: integer
+        max:
+          type: integer
+    content:
+      type: object
+      description: 子資訊
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        stepPeriod:
+          type: string
+        content:
+          type: string
+        image:
+          type: string
+        video:
+          type: string
+        subInfo:
+          type: array
+          items:
+            $ref: '#/components/schemas/content'
+    tableList:
+      type: array
+      description: 資訊列表
+      items:
+        type: object
+        properties:
+          id:
+            type: integer
+          class:
+            type: string
+          name:
+            type: string
+          image:
+            description: 圖片 URL
+            type: array
+            items: 
+              type: string
+    tableList1:
+      type: array
+      items:
+        type: object
+        properties:
+          id:
+            type: integer
+          name:
+            type: string
+          image:
+            type: array
+            items:
+              type: string
+    idNamePair:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/id'
+        name:
+          type: string
+    color:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        code:
+          type: string
+    plantEditInfo:
+      type: object
+      properties:
+        name:
+          $ref: '#/components/schemas/name'
+        category:
+          $ref: '#/components/schemas/id'
+        family:
+          $ref: '#/components/schemas/id'
+        cropLifeCycle:
+          $ref: '#/components/schemas/id'
+        potSize:
+          $ref: '#/components/schemas/id'
+        irrigationMode:
+          $ref: '#/components/schemas/id'
+        commonSpecies:
+          type: string
+        soil:
+          type: string
+        propagations:
+          type: array
+          items:
+            $ref: '#/components/schemas/id'
+        waterRequirement:
+          type: integer
+        plantingDifficulty:
+          type: integer
+        temperature:
+          type: object
+          properties:
+            growth:
+              $ref: '#/components/schemas/threshold'
+            germination:
+              $ref: '#/components/schemas/threshold'
+        harvestPeriod:
+          $ref: '#/components/schemas/threshold'
+        months:
+          $ref: '#/components/schemas/range'
+        images:
+          $ref: '#/components/schemas/imagePlant'
+        places:
+          $ref: '#/components/schemas/idArray'
+        lightCondition:
+          $ref: '#/components/schemas/idArray'
+        damages:
+          type: object
+          properties:
+            pests:
+              $ref: '#/components/schemas/idArray'
+            diseases:
+              $ref: '#/components/schemas/idArray'
+        content:
+          type: array
+          items:
+            type: object
+            properties:
+              title:
+                type: string
+              contents:
+                $ref: '#/components/schemas/strArray'
+              stepPeriod:
+                type: string
+              subInfo:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    title:
+                      type: string
+                    contents:
+                      $ref: '#/components/schemas/strArray'
+                    stepPeriod:
+                      type: string
+    preventionEdit:
+      type: object
+      properties:
+        title:
+          type: string
+        contents:
+          $ref: '#/components/schemas/strArray'
+        materials:
+          $ref: '#/components/schemas/idArray'
+    preventionEditWSub:
+      allOf:
+        - $ref: '#/components/schemas/preventionEdit'
+        - properties:
+            subInfo:
+              type: array
+              items:
+                $ref: '#/components/schemas/preventionEdit'
+    damageEditInfo:
+      type: object
+      properties:
+        name:
+          type: string
+        environment:
+          $ref: '#/components/schemas/id'
+        size:
+          allOf:
+            - description: 蟲害size
+            - $ref: '#/components/schemas/id'
+        colors:
+          allOf:
+            - description: 蟲害color id array
+            - $ref: '#/components/schemas/idArray'
+        organs:
+          allOf:
+            - description: 病蟲害部位id array
+            - $ref: '#/components/schemas/idArray'
+        symptoms:
+          allOf:
+            - description: 病蟲害症狀id array
+            - $ref: '#/components/schemas/idArray'
+        materials:
+          allOf:
+            - description: 病蟲害資材id array
+            - $ref: '#/components/schemas/idArray'
+        images:
+          $ref: '#/components/schemas/editImage'
+        preventions:
+          type: array
+          items:
+            $ref: '#/components/schemas/preventionEditWSub'
+    materialEdit:
+      type: object
+      properties:
+        name:
+          type: string
+        type:
+          $ref: '#/components/schemas/id'
+        images:
+          $ref: "#/components/schemas/imageMaterial"
+        target:
+          type: string
+        method:
+          type: string
+        ingredients:
+          type: string
+        mechanism:
+          type: string
+        steps:
+          type: array
+          items:
+            type: object
+            properties:
+              description:
+                type: string
+              image:
+                type: string
+        precautions:
+          type: array
+          items:
+            type: object
+            properties:
+              description:
+                type: string
+              icon:
+                type: integer
+                enum: 
+                  - 0
+                  - 1
+                  - 2
+    editResult:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: 
+            - success
+            - failed
+        id:
+          allOf:
+            - description: 僅於新增成功時回傳
+            - $ref: '#/components/schemas/id'
+        desc:
+          type: string
+      required: 
+        - status
+    editImage:
+      type: object
+      properties:
+        list:
+          $ref: '#/components/schemas/strArray'
+        profile:
+          $ref: '#/components/schemas/strArray'
+    imageBase:
+      type: object
+      properties:
+        list:
+          $ref: '#/components/schemas/strArray'
+        profile:
+          $ref: '#/components/schemas/strArray'
+    imagePlant:
+      allOf:
+        - $ref: '#/components/schemas/imageBase'
+        - properties:
+            calendar:
+              type: string
+    imageMaterial:
+      allOf:
+        - $ref: '#/components/schemas/imageBase'
+        - properties:
+            fourPanel:
+              type: string
+  securitySchemes:
+    bearerAuth:
+      type: apiKey
+      name: Authorization
+      in: header
+      description: "EX: Bearer {sys_user_token}"
